@@ -6,8 +6,7 @@
   "homepage": "https://github.com/LLK/scratch-storage#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LLK/scratch-storage.git",
-    "sha": "90204e8c430a14deb1dfc3cb3f279eb02e5d8c91"
+    "url": "https://github.com/02engine/scratch-storage.git"
   },
   "main": "./dist/node/scratch-storage.js",
   "browser": "./src/index.js",
