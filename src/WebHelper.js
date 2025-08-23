@@ -1,5 +1,3 @@
-const log = require('./log');
-
 const Asset = require('./Asset');
 const Helper = require('./Helper');
 const ProxyTool = require('./ProxyTool');
@@ -57,7 +55,6 @@ class WebHelper extends Helper {
      * @param {UrlFunction} urlFunction - A function which computes a URL from an Asset.
      */
     addSource (types, urlFunction) {
-        log.warn('Deprecation: WebHelper.addSource has been replaced with WebHelper.addStore.');
         this.addStore(types, urlFunction);
     }
 
@@ -85,13 +82,13 @@ class WebHelper extends Helper {
      * @return {Promise.<Asset>} A promise for the contents of the asset.
      */
     load (assetType, assetId, dataFormat) {
-        
-
 
         /** @type {Array.<{url:string, result:*}>} List of URLs attempted & errors encountered. */
         const errors = [];
         const stores = this.stores.slice()
             .filter(store => store.types.indexOf(assetType.name) >= 0);
+        
+        // New empty asset but it doesn't have data yet
         const asset = new Asset(assetType, assetId, dataFormat);
 
         let tool = this.assetTool;
@@ -100,11 +97,14 @@ class WebHelper extends Helper {
         }
 
         let storeIndex = 0;
-        const tryNextSource = () => {
+        const tryNextSource = err => {
+            if (err) {
+                errors.push(err);
+            }
             const store = stores[storeIndex++];
 
             /** @type {UrlFunction} */
-            const reqConfigFunction = store.get;
+            const reqConfigFunction = store && store.get;
 
             if (reqConfigFunction) {
                 const reqConfig = ensureRequestConfig(reqConfigFunction(asset));
@@ -113,7 +113,13 @@ class WebHelper extends Helper {
                 }
 
                 return tool.get(reqConfig)
-                    .then(body => asset.setData(body, dataFormat))
+                    .then(body => {
+                        if (body) {
+                            asset.setData(body, dataFormat);
+                            return asset;
+                        }
+                        return tryNextSource();
+                    })
                     .catch(tryNextSource);
             } else if (errors.length > 0) {
                 return Promise.reject(errors);
@@ -123,7 +129,7 @@ class WebHelper extends Helper {
             return Promise.resolve(null);
         };
 
-        return tryNextSource().then(() => asset);
+        return tryNextSource();
     }
 
     /**

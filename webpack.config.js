@@ -1,6 +1,4 @@
 const path = require('path');
-const {ProvidePlugin} = require('webpack');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 const base = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -14,19 +12,22 @@ const base = {
                 test: /\.js$/,
                 loader: 'babel-loader',
                 options: {
+                    plugins: [
+                        '@babel/plugin-transform-runtime'
+                    ],
                     presets: [
-                        ['@babel/preset-env', {targets: {browsers: ['last 3 versions', 'Safari >= 8', 'iOS >= 8']}}]
-                    ]
+                        ['@babel/preset-env']
+                    ],
+                    // Consider a file a "module" if import/export statements are present, or else consider it a
+                    // "script". Fixes "Cannot assign to read only property 'exports'" when using
+                    // @babel/plugin-transform-runtime with CommonJS files.
+                    sourceType: 'unambiguous'
                 }
+            },
+            {
+                test: /\.(png|svg|wav)$/,
+                loader: 'arraybuffer-loader'
             }
-        ]
-    },
-    optimization: {
-        minimizer: [
-            new UglifyJsPlugin({
-                include: /\.min\.js$/,
-                sourceMap: true
-            })
         ]
     },
     plugins: []
@@ -65,11 +66,6 @@ module.exports = [
             'js-md5': true,
             'localforage': true,
             'text-encoding': true
-        },
-        plugins: [
-            new ProvidePlugin({
-                fetch: ['node-fetch', 'default']
-            })
-        ]
+        }
     })
 ];

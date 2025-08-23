@@ -1,7 +1,5 @@
 const md5 = require('js-md5');
 
-const log = require('./log');
-
 const Asset = require('./Asset');
 const AssetType = require('./AssetType');
 const DataFormat = require('./DataFormat');
@@ -24,7 +22,7 @@ const DefaultAssets = [
         format: DataFormat.PNG,
         id: null,
         data: Buffer.from(
-            require('!arraybuffer-loader!./builtins/defaultBitmap.png') // eslint-disable-line global-require
+            require('./builtins/defaultBitmap.png') // eslint-disable-line global-require
         )
     },
     {
@@ -32,7 +30,7 @@ const DefaultAssets = [
         format: DataFormat.WAV,
         id: null,
         data: Buffer.from(
-            require('!arraybuffer-loader!./builtins/defaultSound.wav') // eslint-disable-line global-require
+            require('./builtins/defaultSound.wav') // eslint-disable-line global-require
         )
     },
     {
@@ -40,7 +38,7 @@ const DefaultAssets = [
         format: DataFormat.SVG,
         id: null,
         data: Buffer.from(
-            require('!arraybuffer-loader!./builtins/defaultVector.svg') // eslint-disable-line global-require
+            require('./builtins/defaultVector.svg') // eslint-disable-line global-require
         )
     }
 ];
@@ -104,7 +102,6 @@ class BuiltinHelper extends Helper {
      * @returns {string} The calculated id of the cached asset, or the supplied id if the asset is mutable.
      */
     cache (assetType, dataFormat, data, id) {
-        log.warn('Deprecation: BuiltinHelper.cache has been replaced with BuiltinHelper.store.');
         return this.store(assetType, dataFormat, data, id);
     }
 
@@ -118,7 +115,6 @@ class BuiltinHelper extends Helper {
      * @returns {string} The calculated id of the cached asset, or the supplied id if the asset is mutable.
      */
     store (assetType, dataFormat, data, id) {
-        log.warn('Deprecation: use Storage.createAsset. BuiltinHelper is for internal use only.');
         return this._store(assetType, dataFormat, data, id);
     }
 

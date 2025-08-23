@@ -1,19 +1,16 @@
 /* eslint-env worker */
 
-let jobsActive = 0;
+const isNullResponse = require('./isNullResponse');
+const saferFetch = require('./safer-fetch');
+
 const complete = [];
 
-let intervalId = null;
+let timeoutId = null;
 
-/**
- * Register a step function.
- *
- * Step checks if there are completed jobs and if there are sends them to the
- * parent. Then it checks the jobs count. If there are no further jobs, clear
- * the step.
- */
-const registerStep = function () {
-    intervalId = setInterval(() => {
+const checkCompleted = () => {
+    if (timeoutId) return;
+    timeoutId = setTimeout(() => {
+        timeoutId = null;
         if (complete.length) {
             // Send our chunk of completed requests and instruct postMessage to
             // transfer the buffers instead of copying them.
@@ -30,11 +27,7 @@ const registerStep = function () {
             );
             complete.length = 0;
         }
-        if (jobsActive === 0) {
-            clearInterval(intervalId);
-            intervalId = null;
-        }
-    }, 1);
+    });
 };
 
 /**
@@ -42,25 +35,17 @@ const registerStep = function () {
  * @param {object} options.job A job id, url, and options descriptor to perform.
  */
 const onMessage = ({data: job}) => {
-    if (jobsActive === 0 && !intervalId) {
-        registerStep();
-    }
-
-    jobsActive++;
-
-    fetch(job.url, job.options)
-        .then(response => response.arrayBuffer())
+    saferFetch(job.url, job.options)
+        .then(result => {
+            if (result.ok) return result.arrayBuffer();
+            if (isNullResponse(result)) return null;
+            return Promise.reject(result.status);
+        })
         .then(buffer => complete.push({id: job.id, buffer}))
-        .catch(error => complete.push({id: job.id, error}))
-        .then(() => jobsActive--);
+        .catch(error => complete.push({id: job.id, error: (error && error.message) || `Failed request: ${job.url}`}))
+        .then(checkCompleted);
 };
 
-if (self.fetch) {
-    postMessage({support: {fetch: true}});
-    self.addEventListener('message', onMessage);
-} else {
-    postMessage({support: {fetch: false}});
-    self.addEventListener('message', ({data: job}) => {
-        postMessage([{id: job.id, error: new Error('fetch is unavailable')}]);
-    });
-}
+// crossFetch means "fetch" is now always supported
+postMessage({support: {fetch: true}});
+self.addEventListener('message', onMessage);
